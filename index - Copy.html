@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html>
+<head>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.5.1/leaflet.js"></script>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.5.1/leaflet.css" rel="stylesheet" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@turf/turf@6/turf.min.js"></script>
+<!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/Turf.js/0.0.124/turf.js"></script> -->
+<link href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css" rel="stylesheet" />
+<link rel="stylesheet" href="mystyles.css">
+  <meta charset="utf-8">
+  <title>TEST</title>
+
+</head>
+<body>
+  <button id="mapbox-button" onclick="deletee()">Delete</button>
+  <button id="mapbox-button" onclick="simp()">Simplify</button>
+	<div id='map'></div>
+	<script>
+// center of the map
+var center = [-70.603637, -33.399918];
+
+// Create the map
+var map = L.map('map').setView(center, 6);
+lab='mapbox/streets-v11';
+// Set up the OSM layer
+L.tileLayer('https://api.mapbox.com/styles/v1/{id}/tiles/{z}/{x}/{y}?access_token={accessToken}', {
+				attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, Imagery © <a href="https://www.mapbox.com/">Mapbox</a>',
+				maxZoom: 18,
+				//id: 'mapbox/streets-v11',
+				id: lab,
+				tileSize: 512,
+				zoomOffset: -1,
+				accessToken: 'pk.eyJ1Ijoic2hhYWRlbnNzIiwiYSI6ImNrem0wbG41YjJkc3Qyd24yeGl2MTlkdXYifQ.6QUloRYZssJlCCzbwsXmgQ'
+			}).addTo(map); 
+
+// add a marker in the given location
+L.marker(center).addTo(map);
+
+// Initialise the FeatureGroup to store editable layers
+var editableLayers = new L.FeatureGroup();
+map.addLayer(editableLayers);
+
+// define custom marker
+var MyCustomMarker = L.Icon.extend({
+  options: {
+    shadowUrl: null,
+    iconAnchor: new L.Point(12, 12),
+    iconSize: new L.Point(24, 24),
+    iconUrl: 'https://upload.wikimedia.org/wikipedia/commons/6/6b/Information_icon4_orange.svg'
+  }
+});
+
+var drawPluginOptions = {
+  position: 'topright',
+  draw: {
+    polyline: {
+      shapeOptions: {
+        color: '#f357a1',
+        weight: 10
+      }
+    },
+    polygon: {
+      allowIntersection: false, // Restricts shapes to simple polygons
+      drawError: {
+        color: '#e1e100', // Color the shape will turn when intersects
+        message: '<strong>Polygon draw does not allow intersections!<strong> (allowIntersection: false)' // Message that will show when intersect
+      },
+      shapeOptions: {
+        color: '#bada55'
+      }
+    },
+    circle: false, // Turns off this drawing tool
+    rectangle: {
+      shapeOptions: {
+        clickable: false
+      }
+    },
+    marker: {
+      icon: new MyCustomMarker()
+    }
+  },
+  edit: {
+    featureGroup: editableLayers, //REQUIRED!!
+    remove: false
+  }
+};
+
+
+
+
+
+// Initialise the draw control and pass it the FeatureGroup of editable layers
+var drawControl = new L.Control.Draw(drawPluginOptions);
+map.addControl(drawControl);
+
+
+var editableLayers = new L.FeatureGroup();
+map.addLayer(editableLayers);
+
+var drawn;
+var simpleline;
+
+
+map.on('draw:created', function(e) {
+  console.log("after draw" ,e);
+  var type = e.layerType,
+    layer = e.layer;
+
+  if (type === 'marker') {
+    layer.bindPopup('A popup!');
+  }
+  drawn=layer;
+  editableLayers.addLayer(drawn);
+});
+
+//delete if checked
+function simp(event) {
+        //simp
+
+  // program to display text 5 times
+  const n = drawn.editing.latlngs[0].length;
+var newlist = [];
+// looping from i = 1 to 5
+for (let i = 0; i < n; i++) {
+    newlist.push([drawn.editing.latlngs[0][i].lng, drawn.editing.latlngs[0][i].lat])
+}
+  console.log(newlist);
+  var geojson = turf.lineString(newlist)
+  var options = {tolerance: 1, highQuality: false};
+  simpleline = turf.simplify(geojson, options);
+
+
+var addToMap = [simpleline]
+editableLayers.removeLayer(drawn);
+simplelinelayer=L.geoJSON(addToMap);
+simplelinelayer.addTo(editableLayers);
+
+  // editableLayers.addLayer(layer);
+}
+
+//delete if checked
+function deletee(event) {
+          map.removeLayer(simplelinelayer);
+}
+	
+	</script>
+</body>
+</html>
